@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
-import { FaRegGrinStars } from 'react-icons/fa';
 
 export default function Register() {
   const router = useRouter();
@@ -54,89 +53,142 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl">
-        <div className="text-center">
-          <div className="flex justify-center mb-4">
-            <FaRegGrinStars className="text-6xl text-blue-600 dark:text-blue-400" />
-          </div>
-          <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white">
-            Crie sua conta
-          </h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Comece sua jornada como treinador Pokémon
-          </p>
-        </div>
-
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg">
-              {error}
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-800 via-gray-900 to-black py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md">
+        {/* Pokédex Container */}
+        <div className="pokedex-container p-8">
+          {/* Top Section - Lights */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="pokedex-light bg-red-500"></div>
+              <div className="pokedex-light bg-yellow-400"></div>
+              <div className="pokedex-light active"></div>
             </div>
-          )}
-
-          <div className="space-y-4">
-            <Input
-              label="Nome"
-              type="text"
-              required
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              placeholder="Seu nome"
-            />
-
-            <Input
-              label="Email"
-              type="email"
-              required
-              value={formData.email}
-              onChange={(e) =>
-                setFormData({ ...formData, email: e.target.value })
-              }
-              placeholder="seu@email.com"
-            />
-
-            <Input
-              label="Senha"
-              type="password"
-              required
-              value={formData.password}
-              onChange={(e) =>
-                setFormData({ ...formData, password: e.target.value })
-              }
-              placeholder="••••••••"
-            />
-
-            <Input
-              label="Confirmar Senha"
-              type="password"
-              required
-              value={formData.confirmPassword}
-              onChange={(e) =>
-                setFormData({ ...formData, confirmPassword: e.target.value })
-              }
-              placeholder="••••••••"
-            />
+            <div className="text-white font-bold text-lg tracking-wider mr-10">
+              POKÉDEX
+            </div>
           </div>
 
-          <Button type="submit" isLoading={isLoading} className="w-full">
-            Criar Conta
-          </Button>
+          {/* Screen Section */}
+          <div className="pokedex-screen p-6 mb-6">
+            <div className="text-center mb-6">
+              <h2 className="text-3xl font-bold text-gray-900 mb-2 tracking-wider">
+                REGISTRO
+              </h2>
+              <div className="h-1 w-24 bg-red-600 mx-auto mb-4"></div>
+              <p className="text-sm font-semibold text-gray-700">
+                Comece sua jornada como Treinador!
+              </p>
+            </div>
 
-          <div className="text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Já tem uma conta?{' '}
-              <Link
-                href="/login"
-                className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              {error && (
+                <div className="bg-red-600 border-4 border-gray-900 text-white px-4 py-3 rounded-lg font-bold text-sm">
+                  {error}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-gray-900 font-bold mb-2 text-sm">
+                  NOME:
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  placeholder="Seu nome"
+                  className="pokedex-input w-full px-4 py-3 text-gray-900"
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-900 font-bold mb-2 text-sm">
+                  EMAIL:
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
+                  placeholder="seu@email.com"
+                  className="pokedex-input w-full px-4 py-3 text-gray-900"
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-900 font-bold mb-2 text-sm">
+                  SENHA:
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={formData.password}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
+                  placeholder="••••••••"
+                  className="pokedex-input w-full px-4 py-3 text-gray-900"
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-900 font-bold mb-2 text-sm">
+                  CONFIRMAR SENHA:
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={formData.confirmPassword}
+                  onChange={(e) =>
+                    setFormData({ ...formData, confirmPassword: e.target.value })
+                  }
+                  placeholder="••••••••"
+                  className="pokedex-input w-full px-4 py-3 text-gray-900"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="pokedex-button w-full py-4 text-white text-lg disabled:opacity-50 disabled:cursor-not-allowed mt-4"
               >
-                Faça login
-              </Link>
-            </p>
+                {isLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    CARREGANDO...
+                  </span>
+                ) : (
+                  'CRIAR CONTA'
+                )}
+              </button>
+            </form>
           </div>
-        </form>
+
+          {/* Bottom Section - Link */}
+          <div className="text-center">
+            <p className="text-white font-semibold text-sm mb-2">
+              Já tem uma conta?
+            </p>
+            <Link
+              href="/login"
+              className="inline-block pokedex-button px-6 py-2 text-white text-sm"
+            >
+              FAZER LOGIN
+            </Link>
+          </div>
+
+          {/* Decorative Elements */}
+          <div className="absolute top-4 right-4 w-12 h-12 border-4 border-gray-900 rounded-full bg-gray-700"></div>
+          <div className="absolute bottom-4 left-4 w-8 h-8 border-4 border-gray-900 rounded bg-gray-700"></div>
+        </div>
       </div>
     </div>
   );
