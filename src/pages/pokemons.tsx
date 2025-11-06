@@ -3,8 +3,8 @@ import { useRouter } from 'next/router';
 import { Layout } from '@/components/Layout';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { PokemonCard } from '@/components/PokemonCard';
-import { Button } from '@/components/Button';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import { pokeApiService } from '@/services/pokeApiService';
 import { pokemonService } from '@/services/pokemonService';
 import { PokemonFromAPI, CaughtPokemon } from '@/types';
@@ -13,6 +13,7 @@ import { FiSearch, FiLoader } from 'react-icons/fi';
 export default function Pokemons() {
   const router = useRouter();
   const { isAuthenticated, loading: authLoading } = useAuth();
+  const { showToast } = useToast();
   const [pokemons, setPokemons] = useState<PokemonFromAPI[]>([]);
   const [caughtPokemons, setCaughtPokemons] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -21,6 +22,7 @@ export default function Pokemons() {
   const [offset, setOffset] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [hasMore, setHasMore] = useState(true);
+  const [isSearchMode, setIsSearchMode] = useState(false);
   const limit = 20;
 
   useEffect(() => {
@@ -92,8 +94,9 @@ export default function Pokemons() {
       });
 
       setCaughtPokemons((prev) => new Set([...prev, pokemon.id]));
+      showToast('Pokémon capturado com sucesso!', 'success');
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Erro ao capturar pokémon');
+      showToast(error.response?.data?.message || 'Erro ao capturar pokémon', 'error');
     } finally {
       setCatching(null);
     }
@@ -106,90 +109,119 @@ export default function Pokemons() {
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchTerm.trim()) {
+      // Se o campo estiver vazio, volta para a lista normal
+      setIsSearchMode(false);
       loadPokemons(true);
       return;
     }
 
     try {
       setLoading(true);
+      setIsSearchMode(true);
+      // Busca diretamente na API, não apenas nos pokémons carregados
       const pokemon = await pokeApiService.getPokemonByName(
-        searchTerm.toLowerCase()
+        searchTerm.toLowerCase().trim()
       );
       setPokemons([pokemon]);
       setHasMore(false);
     } catch (error) {
-      alert('Pokémon não encontrado!');
+      showToast('Pokémon não encontrado!', 'error');
+      setIsSearchMode(false);
       loadPokemons(true);
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredPokemons = pokemons.filter((p) =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Remove o filtro local - a busca já é feita diretamente na API
+  const displayedPokemons = pokemons;
 
   return (
     <ProtectedRoute>
       <Layout>
-        <div className="px-4 sm:px-6 lg:px-8">
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Pokémons
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Explore e capture seus pokémons favoritos!
-            </p>
-          </div>
-
-          <form onSubmit={handleSearch} className="mb-8">
-            <div className="flex gap-2">
-              <div className="flex-1 relative">
-                <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Buscar pokémon..."
-                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <Button type="submit">Buscar</Button>
-            </div>
-          </form>
-
-          {loading ? (
-            <div className="flex justify-center items-center py-20">
-              <FiLoader className="animate-spin text-4xl text-blue-600" />
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {filteredPokemons.map((pokemon) => (
-                  <PokemonCard
-                    key={pokemon.id}
-                    pokemon={pokemon}
-                    onViewDetails={handleViewDetails}
-                    onCatch={handleCatch}
-                    isCaught={caughtPokemons.has(pokemon.id)}
-                    showCatchButton={true}
-                  />
-                ))}
+        <div className="min-h-screen bg-gradient-to-br from-gray-800 via-gray-900 to-black py-12 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            {/* Pokédex Container */}
+            <div className="pokedex-container p-8">
+              {/* Top Section - Lights */}
+              <div className="flex items-center justify-between mb-6">
               </div>
 
-              {hasMore && !loading && (
-                <div className="mt-8 text-center">
-                  <Button
-                    onClick={() => loadPokemons()}
-                    isLoading={loadingMore}
-                    variant="secondary"
-                  >
-                    Carregar Mais
-                  </Button>
+              {/* Screen Section */}
+              <div className="pokedex-screen p-6 mb-6">
+                <div className="text-center mb-6">
+                  <h2 className="text-3xl font-bold text-gray-900 mb-2 tracking-wider">
+                    POKÉMONS
+                  </h2>
+                  <div className="h-1 w-24 bg-red-600 mx-auto mb-4"></div>
+                  <p className="text-sm font-semibold text-gray-700">
+                    Explore e capture seus pokémons favoritos!
+                  </p>
                 </div>
-              )}
-            </>
-          )}
+
+                <form onSubmit={handleSearch} className="mb-6">
+                  <div className="flex gap-2">
+                    <div className="flex-1 relative">
+                      <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600" />
+                      <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Buscar pokémon..."
+                        className="pokedex-input w-full pl-10 pr-4 py-3 text-gray-900"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="pokedex-button px-6 py-3 text-white text-sm font-bold"
+                    >
+                      BUSCAR
+                    </button>
+                  </div>
+                </form>
+
+                {loading ? (
+                  <div className="flex justify-center items-center py-20">
+                    <FiLoader className="animate-spin text-4xl text-gray-900" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {displayedPokemons.map((pokemon) => (
+                        <PokemonCard
+                          key={pokemon.id}
+                          pokemon={pokemon}
+                          onViewDetails={handleViewDetails}
+                          onCatch={handleCatch}
+                          isCaught={caughtPokemons.has(pokemon.id)}
+                          showCatchButton={true}
+                        />
+                      ))}
+                    </div>
+
+                    {hasMore && !loading && !isSearchMode && (
+                      <div className="mt-8 text-center">
+                        <button
+                          onClick={() => loadPokemons()}
+                          disabled={loadingMore}
+                          className="pokedex-button px-8 py-3 text-white text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {loadingMore ? (
+                            <span className="flex items-center justify-center gap-2">
+                              <FiLoader className="animate-spin h-5 w-5" />
+                              CARREGANDO...
+                            </span>
+                          ) : (
+                            'CARREGAR MAIS'
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </Layout>
     </ProtectedRoute>

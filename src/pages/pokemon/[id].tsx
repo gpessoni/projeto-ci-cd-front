@@ -3,20 +3,22 @@ import { useRouter } from 'next/router';
 import Image from 'next/image';
 import { Layout } from '@/components/Layout';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { Button } from '@/components/Button';
+import { useToast } from '@/contexts/ToastContext';
 import { pokeApiService } from '@/services/pokeApiService';
 import { pokemonService } from '@/services/pokemonService';
 import { PokemonFromAPI, CaughtPokemon } from '@/types';
-import { FiArrowLeft, FiLoader } from 'react-icons/fi';
+import { FiArrowLeft, FiLoader, FiX } from 'react-icons/fi';
 
 export default function PokemonDetails() {
   const router = useRouter();
   const { id } = router.query;
+  const { showToast } = useToast();
   const [pokemon, setPokemon] = useState<PokemonFromAPI | null>(null);
   const [caughtPokemon, setCaughtPokemon] = useState<CaughtPokemon | null>(null);
   const [loading, setLoading] = useState(true);
   const [catching, setCatching] = useState(false);
   const [releasing, setReleasing] = useState(false);
+  const [showConfirmRelease, setShowConfirmRelease] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -33,7 +35,7 @@ export default function PokemonDetails() {
       setPokemon(data);
     } catch (error) {
       console.error('Erro ao carregar pokémon:', error);
-      alert('Pokémon não encontrado!');
+      showToast('Pokémon não encontrado!', 'error');
       router.push('/pokemons');
     } finally {
       setLoading(false);
@@ -68,26 +70,30 @@ export default function PokemonDetails() {
       });
 
       setCaughtPokemon(caught);
+      showToast('Pokémon capturado com sucesso!', 'success');
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Erro ao capturar pokémon');
+      showToast(error.response?.data?.message || 'Erro ao capturar pokémon', 'error');
     } finally {
       setCatching(false);
     }
   };
 
-  const handleRelease = async () => {
+  const handleRelease = () => {
     if (!caughtPokemon) return;
+    setShowConfirmRelease(true);
+  };
 
-    if (!confirm('Tem certeza que deseja soltar este pokémon?')) {
-      return;
-    }
+  const confirmRelease = async () => {
+    if (!caughtPokemon) return;
 
     try {
       setReleasing(true);
       await pokemonService.releasePokemon(caughtPokemon.id);
       setCaughtPokemon(null);
+      setShowConfirmRelease(false);
+      showToast('Pokémon solto com sucesso!', 'success');
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Erro ao soltar pokémon');
+      showToast(error.response?.data?.message || 'Erro ao soltar pokémon', 'error');
     } finally {
       setReleasing(false);
     }
@@ -97,8 +103,8 @@ export default function PokemonDetails() {
     return (
       <ProtectedRoute>
         <Layout>
-          <div className="flex justify-center items-center py-20">
-            <FiLoader className="animate-spin text-4xl text-blue-600" />
+          <div className="min-h-screen bg-gradient-to-br from-gray-800 via-gray-900 to-black flex items-center justify-center">
+            <FiLoader className="animate-spin text-4xl text-white" />
           </div>
         </Layout>
       </ProtectedRoute>
@@ -140,87 +146,91 @@ export default function PokemonDetails() {
   return (
     <ProtectedRoute>
       <Layout>
-        <div className="px-4 sm:px-6 lg:px-8">
-          <button
-            onClick={() => router.back()}
-            className="mb-6 flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-          >
-            <FiArrowLeft />
-            Voltar
-          </button>
+        <div className="min-h-screen bg-gradient-to-br from-gray-800 via-gray-900 to-black py-12 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-6xl mx-auto">
+            {/* Pokédex Container */}
+            <div className="pokedex-container p-8">
+              {/* Top Section - Lights */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                </div>
+                <button
+                  onClick={() => router.back()}
+                  className="flex items-center gap-2 text-white hover:text-yellow-400 transition-colors font-bold text-sm"
+                >
+                  <FiArrowLeft />
+                  VOLTAR
+                </button>
+              </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
-            <div className={`${typeColors[primaryType]} p-8`}>
-              <div className="max-w-4xl mx-auto">
-                <div className="flex flex-col md:flex-row items-center gap-8">
-                  <div className="relative w-64 h-64 flex-shrink-0">
-                    <Image
-                      src={imageUrl}
-                      alt={pokemon.name}
-                      fill
-                      className="object-contain"
-                      unoptimized
-                    />
-                  </div>
-
-                  <div className="flex-1 text-white">
-                    <h1 className="text-5xl font-bold capitalize mb-2">
-                      {pokemon.name}
-                    </h1>
-                    <p className="text-2xl mb-4 opacity-90">
-                      #{String(pokemon.id).padStart(3, '0')}
-                    </p>
-
-                    <div className="flex gap-2 mb-6">
-                      {pokemon.types.map((type) => (
-                        <span
-                          key={type.type.name}
-                          className={`px-4 py-2 rounded-full text-sm font-semibold ${typeColors[type.type.name] || 'bg-gray-400'}`}
-                        >
-                          {type.type.name}
-                        </span>
-                      ))}
+              {/* Screen Section */}
+              <div className="pokedex-screen p-6 mb-6">
+                {/* Pokemon Header */}
+                <div className={`${typeColors[primaryType]} p-6 mb-6 rounded-lg border-4 border-gray-900`}>
+                  <div className="flex flex-col md:flex-row items-center gap-6">
+                    <div className="relative w-48 h-48 flex-shrink-0 bg-white rounded-lg border-4 border-gray-900 p-4">
+                      <Image
+                        src={imageUrl}
+                        alt={pokemon.name}
+                        fill
+                        className="object-contain"
+                        unoptimized
+                      />
                     </div>
 
-                    <div className="flex gap-4 text-lg">
-                      <div>
-                        <span className="font-semibold">Altura:</span>{' '}
-                        {pokemon.height / 10}m
+                    <div className="flex-1 text-white text-center md:text-left">
+                      <h1 className="text-4xl md:text-5xl font-bold capitalize mb-2">
+                        {pokemon.name}
+                      </h1>
+                      <p className="text-xl md:text-2xl mb-4 opacity-90">
+                        #{String(pokemon.id).padStart(3, '0')}
+                      </p>
+
+                      <div className="flex gap-2 mb-4 justify-center md:justify-start">
+                        {pokemon.types.map((type) => (
+                          <span
+                            key={type.type.name}
+                            className={`px-4 py-2 rounded-full text-sm font-semibold border-2 border-gray-900 ${typeColors[type.type.name] || 'bg-gray-400'}`}
+                          >
+                            {type.type.name.toUpperCase()}
+                          </span>
+                        ))}
                       </div>
-                      <div>
-                        <span className="font-semibold">Peso:</span>{' '}
-                        {pokemon.weight / 10}kg
-                      </div>
-                      <div>
-                        <span className="font-semibold">XP Base:</span>{' '}
-                        {pokemon.base_experience}
+
+                      <div className="flex flex-wrap gap-4 text-base md:text-lg justify-center md:justify-start">
+                        <div className="font-bold">
+                          <span>ALTURA:</span> {pokemon.height / 10}m
+                        </div>
+                        <div className="font-bold">
+                          <span>PESO:</span> {pokemon.weight / 10}kg
+                        </div>
+                        <div className="font-bold">
+                          <span>XP BASE:</span> {pokemon.base_experience}
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="p-8">
-              <div className="max-w-4xl mx-auto">
-                <div className="mb-8">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                    Estatísticas
+                {/* Estatísticas */}
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4 tracking-wider border-b-4 border-gray-900 pb-2">
+                    ESTATÍSTICAS
                   </h2>
                   <div className="space-y-3">
                     {pokemon.stats.map((stat) => (
                       <div key={stat.stat.name}>
                         <div className="flex justify-between mb-1">
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 capitalize">
-                            {stat.stat.name.replace('-', ' ')}
+                          <span className="text-sm font-bold text-gray-900 capitalize">
+                            {stat.stat.name.replace('-', ' ').toUpperCase()}
                           </span>
-                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          <span className="text-sm font-bold text-gray-900">
                             {stat.base_stat}
                           </span>
                         </div>
-                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div className="w-full bg-gray-300 border-2 border-gray-900 rounded-full h-3">
                           <div
-                            className="bg-blue-600 h-2 rounded-full"
+                            className="bg-red-600 h-full rounded-full border-2 border-gray-900"
                             style={{
                               width: `${Math.min((stat.base_stat / 255) * 100, 100)}%`,
                             }}
@@ -231,20 +241,21 @@ export default function PokemonDetails() {
                   </div>
                 </div>
 
-                <div className="mb-8">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                    Habilidades
+                {/* Habilidades */}
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4 tracking-wider border-b-4 border-gray-900 pb-2">
+                    HABILIDADES
                   </h2>
                   <div className="flex flex-wrap gap-2">
                     {pokemon.abilities.map((ability) => (
                       <span
                         key={ability.ability.name}
-                        className="px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 capitalize"
+                        className="px-4 py-2 bg-white border-4 border-gray-900 rounded-lg text-sm font-bold text-gray-900 capitalize"
                       >
                         {ability.ability.name}
                         {ability.is_hidden && (
-                          <span className="ml-2 text-xs text-gray-500">
-                            (oculta)
+                          <span className="ml-2 text-xs text-gray-600">
+                            (OCULTA)
                           </span>
                         )}
                       </span>
@@ -252,19 +263,27 @@ export default function PokemonDetails() {
                   </div>
                 </div>
 
-                <div className="flex gap-4">
+                {/* Ações */}
+                <div className="flex flex-col sm:flex-row gap-4 items-center">
                   {caughtPokemon ? (
                     <>
-                      <Button
-                        variant="danger"
+                      <button
                         onClick={handleRelease}
-                        isLoading={releasing}
+                        disabled={releasing}
+                        className="pokedex-button px-8 py-3 text-white text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed bg-red-600 hover:bg-red-700"
                       >
-                        Soltar Pokémon
-                      </Button>
-                      <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                        <span className="text-sm font-medium">
-                          Capturado em:{' '}
+                        {releasing ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <FiLoader className="animate-spin h-5 w-5" />
+                            SOLTANDO...
+                          </span>
+                        ) : (
+                          'SOLTAR POKÉMON'
+                        )}
+                      </button>
+                      <div className="flex items-center gap-2 text-green-700 font-bold text-sm">
+                        <span>
+                          CAPTURADO EM:{' '}
                           {new Date(caughtPokemon.caughtAt).toLocaleDateString(
                             'pt-BR'
                           )}
@@ -272,19 +291,70 @@ export default function PokemonDetails() {
                       </div>
                     </>
                   ) : (
-                    <Button
+                    <button
                       onClick={handleCatch}
-                      isLoading={catching}
-                      className="w-full md:w-auto"
+                      disabled={catching}
+                      className="pokedex-button w-full sm:w-auto px-8 py-3 text-white text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Capturar Pokémon
-                    </Button>
+                      {catching ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <FiLoader className="animate-spin h-5 w-5" />
+                          CAPTURANDO...
+                        </span>
+                      ) : (
+                        'CAPTURAR POKÉMON'
+                      )}
+                    </button>
                   )}
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Modal de Confirmação */}
+        {showConfirmRelease && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="pokedex-container p-6 max-w-md w-full">
+              <div className="pokedex-screen p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-gray-900">Confirmar Ação</h3>
+                  <button
+                    onClick={() => setShowConfirmRelease(false)}
+                    className="text-gray-900 hover:text-gray-700"
+                  >
+                    <FiX className="text-2xl" />
+                  </button>
+                </div>
+                <p className="text-gray-900 font-semibold mb-6">
+                  Tem certeza que deseja soltar este pokémon?
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowConfirmRelease(false)}
+                    className="flex-1 pokedex-button px-4 py-2 text-white text-sm font-bold bg-gray-600 hover:bg-gray-700"
+                  >
+                    CANCELAR
+                  </button>
+                  <button
+                    onClick={confirmRelease}
+                    disabled={releasing}
+                    className="flex-1 pokedex-button px-4 py-2 text-white text-sm font-bold bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {releasing ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <FiLoader className="animate-spin h-4 w-4" />
+                        SOLTANDO...
+                      </span>
+                    ) : (
+                      'CONFIRMAR'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </Layout>
     </ProtectedRoute>
   );
