@@ -47,18 +47,18 @@ export const PokemonCard: React.FC<PokemonCardProps> = ({
 
   return (
     <div
-      className={`relative bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer group ${
-        isCaught ? 'ring-2 ring-yellow-400' : ''
+      className={`relative bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer group border-4 border-gray-900 ${
+        isCaught ? 'ring-4 ring-yellow-400' : ''
       }`}
       onClick={() => onViewDetails(pokemon)}
     >
       {isCaught && (
-        <div className="absolute top-2 right-2 z-10 bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full text-xs font-bold">
+        <div className="absolute top-2 right-2 z-10 bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full text-xs font-bold border-2 border-gray-900">
           Capturado
         </div>
       )}
       
-      <div className={`h-32 ${typeColors[primaryType]} flex items-center justify-center`}>
+      <div className="h-32 bg-gradient-to-br from-[#b0e69a] to-[#7dd3d4] flex items-center justify-center border-b-4 border-gray-900">
         <div className="relative w-24 h-24">
           <Image
             src={imageUrl}
@@ -71,7 +71,7 @@ export const PokemonCard: React.FC<PokemonCardProps> = ({
       </div>
 
       <div className="p-4">
-        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 capitalize mb-2">
+        <h3 className="text-lg font-bold text-gray-900 capitalize mb-2">
           {pokemon.name}
         </h3>
         
@@ -79,14 +79,14 @@ export const PokemonCard: React.FC<PokemonCardProps> = ({
           {pokemon.types.map((type) => (
             <span
               key={type.type.name}
-              className={`px-2 py-1 rounded-full text-xs font-semibold text-white ${typeColors[type.type.name] || 'bg-gray-400'}`}
+              className={`px-2 py-1 rounded-full text-xs font-semibold text-white border-2 border-gray-900 ${typeColors[type.type.name] || 'bg-gray-400'}`}
             >
               {type.type.name}
             </span>
           ))}
         </div>
 
-        <div className="flex justify-between items-center text-sm text-gray-600 dark:text-gray-400">
+        <div className="flex justify-between items-center text-sm font-semibold text-gray-900">
           <span>#{String(pokemon.id).padStart(3, '0')}</span>
           <span>{pokemon.height / 10}m / {pokemon.weight / 10}kg</span>
         </div>
@@ -97,9 +97,9 @@ export const PokemonCard: React.FC<PokemonCardProps> = ({
               e.stopPropagation();
               onCatch(pokemon);
             }}
-            className="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold transition-colors"
+            className="mt-3 w-full pokedex-button text-white py-2 text-sm font-bold"
           >
-            Capturar
+            CAPTURAR
           </button>
         )}
       </div>
