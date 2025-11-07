@@ -9,6 +9,7 @@ import { pokeApiService } from '@/services/pokeApiService';
 import { pokemonService } from '@/services/pokemonService';
 import { PokemonFromAPI, CaughtPokemon } from '@/types';
 import { FiSearch, FiLoader } from 'react-icons/fi';
+import api from '@/services/api';
 
 export default function Pokemons() {
   const router = useRouter();
@@ -158,6 +159,21 @@ export default function Pokemons() {
                     Explore e capture seus pokémons favoritos!
                   </p>
                 </div>
+
+                <button
+                  className="pokedex-button px-6 py-3 mb-4 text-white text-sm font-bold mb-4 flex justify-center items-center mx-auto"
+                  onClick={async () => {
+                    try {
+                      const response = await api.get('/hello');
+                      const data = await response.data;
+                      alert(data);
+                    } catch (error) {
+                      alert('Erro ao chamar o endpoint /hello');
+                    }
+                  }}
+                >
+                  Chamar Teste do Backend
+                </button>
 
                 <form onSubmit={handleSearch} className="mb-6">
                   <div className="flex gap-2">
