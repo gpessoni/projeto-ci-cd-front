@@ -107,3 +107,15 @@ export interface PokemonListResponseBackend {
   pokemons: CaughtPokemon[];
 }
 
+export interface TrainerPokemon {
+  id: string;
+  pokemonId: number;
+  name: string;
+  image: string;
+  caughtAt?: string;
+}
+
+export interface TrainerWithPokemons extends User {
+  pokemons: TrainerPokemon[];
+}
+
