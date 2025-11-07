@@ -2,7 +2,7 @@ import React, { ReactNode } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { FiHome, FiLogOut, FiUser, FiHeart } from 'react-icons/fi';
+import { FiHome, FiLogOut, FiUser, FiHeart, FiUsers } from 'react-icons/fi';
 
 interface LayoutProps {
   children: ReactNode;
@@ -19,6 +19,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigation = [
     { name: 'Pokémons', href: '/pokemons', icon: FiHome },
     { name: 'Minha Coleção', href: '/collection', icon: FiHeart },
+    { name: 'Treinadores', href: '/trainers', icon: FiUsers },
   ];
 
   return (
