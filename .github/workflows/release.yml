@@ -1,0 +1,34 @@
+name: Release and Deploy Workflow
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Exemplo: v1.0.0, v2.1.3 etc.
+
+jobs:
+  build-and-deploy:
+    name: Detectar versão e publicar na Vercel
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v3
+
+      - name: Mostrar versão
+        run: echo "Publicando versão ${GITHUB_REF_NAME}"
+
+      - name: Instalar dependências
+        run: npm install
+
+      - name: Gerar build
+        run: npm run build
+
+      # Ação oficial não-oficial (de comunidade) para deploy na Vercel
+      - name: Deploy para Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./
+          vercel-args: '--prod'
