@@ -92,7 +92,7 @@ export default function Login() {
                             <div className="pokedex-light active"></div>
                         </div>
                         <div className="text-white font-bold text-lg tracking-wider mr-10">
-                            POKÉDEX TESTE
+                            POKÉDEX
                         </div>
                     </div>
 
