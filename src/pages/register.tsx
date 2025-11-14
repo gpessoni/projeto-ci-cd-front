@@ -1,13 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { Input } from '@/components/Input';
-import { Button } from '@/components/Button';
+
+// Função auxiliar para validar email
+const validateEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+// Função auxiliar para validar força da senha
+const validatePasswordStrength = (password: string): { isValid: boolean; error: string | null } => {
+  if (password.length < 6) {
+    return { isValid: false, error: 'A senha deve ter pelo menos 6 caracteres' };
+  }
+  if (password.length > 50) {
+    return { isValid: false, error: 'A senha não pode ter mais de 50 caracteres' };
+  }
+  return { isValid: true, error: null };
+};
+
+// Função auxiliar para validar formulário completo
+const validateRegisterForm = (
+  name: string,
+  email: string,
+  password: string,
+  confirmPassword: string
+): string | null => {
+  if (!name.trim()) {
+    return 'O nome é obrigatório';
+  }
+  if (name.trim().length < 2) {
+    return 'O nome deve ter pelo menos 2 caracteres';
+  }
+  if (name.trim().length > 50) {
+    return 'O nome não pode ter mais de 50 caracteres';
+  }
+  
+  if (!email.trim()) {
+    return 'O email é obrigatório';
+  }
+  if (!validateEmail(email)) {
+    return 'Por favor, insira um email válido';
+  }
+  
+  const passwordValidation = validatePasswordStrength(password);
+  if (!passwordValidation.isValid) {
+    return passwordValidation.error || 'Senha inválida';
+  }
+  
+  if (password !== confirmPassword) {
+    return 'As senhas não coincidem';
+  }
+  
+  return null;
+};
 
 export default function Register() {
   const router = useRouter();
-  const { register, isAuthenticated } = useAuth();
+  const { register: registerUser, isAuthenticated } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -17,36 +68,54 @@ export default function Register() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isAuthenticated) {
       router.push('/pokemons');
     }
   }, [isAuthenticated, router]);
 
+  const handleChange = useCallback((field: 'name' | 'email' | 'password' | 'confirmPassword') => (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: e.target.value,
+    }));
+    // Limpar erro quando o usuário começar a digitar
+    if (error) {
+      setError('');
+    }
+  }, [error]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (formData.password !== formData.confirmPassword) {
-      setError('As senhas não coincidem');
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      setError('A senha deve ter pelo menos 6 caracteres');
+    // Validação do formulário
+    const validationError = validateRegisterForm(
+      formData.name,
+      formData.email,
+      formData.password,
+      formData.confirmPassword
+    );
+    
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
     setIsLoading(true);
 
     try {
-      await register({
-        name: formData.name,
-        email: formData.email,
+      await registerUser({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
         password: formData.password,
       });
+      // O redirecionamento é feito automaticamente pelo AuthContext
     } catch (err: any) {
-      setError(err.message || 'Erro ao criar conta');
+      const errorMessage = err?.response?.data?.message || err?.message || 'Erro ao criar conta. Tente novamente.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -96,11 +165,12 @@ export default function Register() {
                   type="text"
                   required
                   value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
+                  onChange={handleChange('name')}
                   placeholder="Seu nome"
-                  className="pokedex-input w-full px-4 py-3 text-gray-900"
+                  disabled={isLoading}
+                  className="pokedex-input w-full px-4 py-3 text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                  autoComplete="name"
+                  maxLength={50}
                 />
               </div>
 
@@ -112,11 +182,11 @@ export default function Register() {
                   type="email"
                   required
                   value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
+                  onChange={handleChange('email')}
                   placeholder="seu@email.com"
-                  className="pokedex-input w-full px-4 py-3 text-gray-900"
+                  disabled={isLoading}
+                  className="pokedex-input w-full px-4 py-3 text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                  autoComplete="email"
                 />
               </div>
 
@@ -128,12 +198,19 @@ export default function Register() {
                   type="password"
                   required
                   value={formData.password}
-                  onChange={(e) =>
-                    setFormData({ ...formData, password: e.target.value })
-                  }
+                  onChange={handleChange('password')}
                   placeholder="••••••••"
-                  className="pokedex-input w-full px-4 py-3 text-gray-900"
+                  disabled={isLoading}
+                  className="pokedex-input w-full px-4 py-3 text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                  autoComplete="new-password"
+                  minLength={6}
+                  maxLength={50}
                 />
+                {formData.password && formData.password.length > 0 && (
+                  <p className="mt-1 text-xs font-semibold text-gray-600">
+                    Mínimo de 6 caracteres
+                  </p>
+                )}
               </div>
 
               <div>
@@ -144,12 +221,25 @@ export default function Register() {
                   type="password"
                   required
                   value={formData.confirmPassword}
-                  onChange={(e) =>
-                    setFormData({ ...formData, confirmPassword: e.target.value })
-                  }
+                  onChange={handleChange('confirmPassword')}
                   placeholder="••••••••"
-                  className="pokedex-input w-full px-4 py-3 text-gray-900"
+                  disabled={isLoading}
+                  className="pokedex-input w-full px-4 py-3 text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                  autoComplete="new-password"
+                  minLength={6}
+                  maxLength={50}
                 />
+                {formData.confirmPassword && formData.password && (
+                  <p className={`mt-1 text-xs font-semibold ${
+                    formData.password === formData.confirmPassword
+                      ? 'text-green-600'
+                      : 'text-red-600'
+                  }`}>
+                    {formData.password === formData.confirmPassword
+                      ? '✓ Senhas coincidem'
+                      : '✗ Senhas não coincidem'}
+                  </p>
+                )}
               </div>
 
               <button
