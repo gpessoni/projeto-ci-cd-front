@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { Layout } from '@/components/Layout';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -16,12 +16,14 @@ import {
   FiRefreshCw,
 } from 'react-icons/fi';
 
+// Função auxiliar para garantir que pokemons seja sempre um array
 const ensurePokemons = (trainer: TrainerWithPokemons): TrainerWithPokemons => ({
   ...trainer,
   pokemons: Array.isArray(trainer.pokemons) ? trainer.pokemons : [],
 });
 
-const getPokemonImage = (pokemon: TrainerPokemon) =>
+// Função auxiliar para obter imagem do pokémon
+const getPokemonImage = (pokemon: TrainerPokemon): string =>
   pokemon.image || pokeApiService.getOfficialArtwork(pokemon.pokemonId);
 
 export default function Trainers() {
@@ -32,57 +34,72 @@ export default function Trainers() {
   const [expandedTrainerId, setExpandedTrainerId] = useState<string | null>(null);
   const [loadingTrainerId, setLoadingTrainerId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!authLoading && isAuthenticated) {
-      loadTrainers();
-    }
-  }, [authLoading, isAuthenticated]);
-
-  const loadTrainers = async () => {
+  // Função para carregar treinadores
+  const loadTrainers = useCallback(async () => {
     try {
       setLoading(true);
       const data = await userService.getUsersWithPokemons();
       const normalized = data.map(ensurePokemons);
       setTrainers(normalized);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao carregar treinadores:', error);
-      showToast('Não foi possível carregar os treinadores.', 'error');
+      const errorMessage = error?.response?.data?.message || 'Não foi possível carregar os treinadores.';
+      showToast(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
 
-  const toggleTrainer = async (trainerId: string) => {
+  // Carregar treinadores quando autenticado
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      loadTrainers();
+    }
+  }, [authLoading, isAuthenticated, loadTrainers]);
+
+  // Função para carregar pokémons de um treinador específico
+  const loadTrainerPokemons = useCallback(async (trainerId: string) => {
+    try {
+      setLoadingTrainerId(trainerId);
+      const freshData = await userService.getUserWithPokemons(trainerId);
+      
+      if (freshData) {
+        setTrainers((prev) =>
+          prev.map((item) =>
+            item.id === trainerId
+              ? ensurePokemons({ ...item, pokemons: freshData.pokemons })
+              : item
+          )
+        );
+      }
+    } catch (error: any) {
+      console.error(`Erro ao carregar pokémons do treinador ${trainerId}:`, error);
+      const errorMessage = error?.response?.data?.message || 'Erro ao carregar pokémons do treinador.';
+      showToast(errorMessage, 'error');
+    } finally {
+      setLoadingTrainerId(null);
+    }
+  }, [showToast]);
+
+  // Função para alternar expansão de treinador
+  const toggleTrainer = useCallback(async (trainerId: string) => {
+    // Se já está expandido, apenas recolher
     if (expandedTrainerId === trainerId) {
       setExpandedTrainerId(null);
       return;
     }
 
-    const trainer = trainers.find((t) => t.id === trainerId);
-
-    if (trainer && (!trainer.pokemons || trainer.pokemons.length === 0)) {
-      try {
-        setLoadingTrainerId(trainerId);
-        const freshData = await userService.getUserWithPokemons(trainerId);
-        if (freshData) {
-          setTrainers((prev) =>
-            prev.map((item) =>
-              item.id === trainerId
-                ? ensurePokemons({ ...item, pokemons: freshData.pokemons })
-                : item
-            )
-          );
-        }
-      } catch (error) {
-        console.error(`Erro ao carregar pokémons do treinador ${trainerId}:`, error);
-        showToast('Erro ao carregar pokémons do treinador.', 'error');
-      } finally {
-        setLoadingTrainerId(null);
-      }
-    }
-
+    // Expandir o novo treinador
     setExpandedTrainerId(trainerId);
-  };
+
+    // Verificar se precisa carregar os pokémons
+    const trainer = trainers.find((t) => t.id === trainerId);
+    const needsLoad = trainer && (!trainer.pokemons || trainer.pokemons.length === 0);
+
+    if (needsLoad) {
+      await loadTrainerPokemons(trainerId);
+    }
+  }, [expandedTrainerId, trainers, loadTrainerPokemons]);
 
   const trainerCount = useMemo(() => trainers.length, [trainers]);
 

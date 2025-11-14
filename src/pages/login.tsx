@@ -1,13 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { Input } from '@/components/Input';
-import { Button } from '@/components/Button';
+
+// Função auxiliar para validar email
+const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+};
+
+// Função auxiliar para validar formulário
+const validateLoginForm = (email: string, password: string): string | null => {
+    if (!email.trim()) {
+        return 'O email é obrigatório';
+    }
+    if (!validateEmail(email)) {
+        return 'Por favor, insira um email válido';
+    }
+    if (!password) {
+        return 'A senha é obrigatória';
+    }
+    if (password.length < 6) {
+        return 'A senha deve ter pelo menos 6 caracteres';
+    }
+    return null;
+};
 
 export default function Login() {
     const router = useRouter();
-    const { login, isAuthenticated } = useAuth();
+    const { login: loginUser, isAuthenticated } = useAuth();
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -15,21 +36,44 @@ export default function Login() {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (isAuthenticated) {
             router.push('/pokemons');
         }
     }, [isAuthenticated, router]);
 
+    const handleChange = useCallback((field: 'email' | 'password') => (
+        e: React.ChangeEvent<HTMLInputElement>
+    ) => {
+        setFormData((prev) => ({
+            ...prev,
+            [field]: e.target.value,
+        }));
+        // Limpar erro quando o usuário começar a digitar
+        if (error) {
+            setError('');
+        }
+    }, [error]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        
+        // Validação do formulário
+        const validationError = validateLoginForm(formData.email, formData.password);
+        if (validationError) {
+            setError(validationError);
+            return;
+        }
+
         setIsLoading(true);
 
         try {
-            await login(formData);
+            await loginUser(formData);
+            // O redirecionamento é feito automaticamente pelo AuthContext
         } catch (err: any) {
-            setError(err.message || 'Erro ao fazer login');
+            const errorMessage = err?.response?.data?.message || err?.message || 'Erro ao fazer login. Verifique suas credenciais.';
+            setError(errorMessage);
         } finally {
             setIsLoading(false);
         }
@@ -79,11 +123,11 @@ export default function Login() {
                                     type="email"
                                     required
                                     value={formData.email}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, email: e.target.value })
-                                    }
+                                    onChange={handleChange('email')}
                                     placeholder="seu@email.com"
-                                    className="pokedex-input w-full px-4 py-3 text-gray-900"
+                                    disabled={isLoading}
+                                    className="pokedex-input w-full px-4 py-3 text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    autoComplete="email"
                                 />
                             </div>
 
@@ -95,11 +139,11 @@ export default function Login() {
                                     type="password"
                                     required
                                     value={formData.password}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, password: e.target.value })
-                                    }
+                                    onChange={handleChange('password')}
                                     placeholder="••••••••"
-                                    className="pokedex-input w-full px-4 py-3 text-gray-900"
+                                    disabled={isLoading}
+                                    className="pokedex-input w-full px-4 py-3 text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    autoComplete="current-password"
                                 />
                             </div>
 
